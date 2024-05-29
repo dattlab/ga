@@ -36,14 +36,14 @@ class Locator:
         self.env = env
         self.costs = []
         self.visited = set()
-        self.tries = 0
+        self.t = 0
 
     def find_best_loc(self) -> None:
         curr_gen = 1
         parents = [
             random.choice(self.env.coords), random.choice(self.env.coords)
         ]
-        while self.tries < 1000 and (curr_gen <= 100 or len(self.visited) == 100):
+        while self.t < 10000 and (curr_gen <= 100 or len(self.visited) == 100):
             best_parent = self.get_best_indv(parents)
             new_offspring = self.gen_offspring(parents[0], parents[1])
             offspring_cost = self.calc_cost(new_offspring)
@@ -56,13 +56,14 @@ class Locator:
                     if not self.is_same_loc(new_offspring, new_parent):
                         parents[1] = new_parent
                         break
-                print(f"Gen={curr_gen}\tCoord={new_offspring}\tCost={offspring_cost}\tFreq={self.env.city_matrix[new_offspring[1]][new_offspring[0]]}")
+                print(f"Gen={curr_gen}\tCoord={new_offspring}\tCost={round(offspring_cost, 2)}\tFreq={self.env.city_matrix[new_offspring[1]][new_offspring[0]]}\tTries={self.t}")
                 curr_gen += 1
             else:
                 if new_offspring not in self.visited:
                     self.visited.add(new_offspring)
                 parents[1] = random.choice(self.env.coords)
-            self.tries += 1
+            self.t += 1
+        print(len(self.visited))
         self.show_result()
 
     def get_best_indv(self, coords: list[tuple[int, int]]) -> tuple[int, int]:
@@ -100,7 +101,7 @@ class Locator:
 
     def show_result(self) -> None:
         plt.figure(figsize=(10, 5))
-        plt.plot(self.costs, linestyle='-')
+        plt.plot(self.costs, marker="o", linestyle='-')
         plt.title('Convergence Graph')
         plt.xlabel('Generation')
         plt.ylabel('Cost Value')
