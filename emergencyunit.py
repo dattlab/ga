@@ -1,9 +1,13 @@
 from math import sqrt
+from typing import Union, List
+from tabulate import tabulate
+
 import matplotlib.pyplot as plt
 import random
 
 
-CITY = [
+MAX_GENERATION: int = 100
+CITY: List[List[int]] = [
     [5, 2, 4, 8, 9, 0, 3, 3, 8, 7],
     [5, 5, 3, 4, 4, 6, 4, 1, 9, 1],
     [4, 1, 2, 1, 3, 8, 7, 8, 9, 1],
@@ -18,13 +22,14 @@ CITY = [
 
 
 class Environment:
-    def __init__(self, city_matrix: list[list[int]]) -> None:
-        self.num_cities = len(city_matrix) * len(city_matrix[0])
-        self.city_matrix = city_matrix
-        self.coords = self.get_coords()
+    def __init__(self, city_matrix: List[list[int]]) -> None:
+        self.num_cities: int = len(city_matrix) * len(city_matrix[0])  # 10 x 10
+        self.city_matrix: List[List[int]] = city_matrix
+        # get all coords of every city and store as 1D list
+        self.coords: List[tuple[int, int]] = self.get_coords()
 
-    def get_coords(self) -> list[tuple[int, int]]:
-        coords = []
+    def get_coords(self) -> List[tuple[int, int]]:
+        coords: List[tuple[int, int]] = []
         for y in range(len(self.city_matrix)):
             for x in range(len(self.city_matrix[y])):
                 coords.append((x, y))
@@ -33,41 +38,42 @@ class Environment:
 
 class Locator:
     def __init__(self, env: Environment) -> None:
-        self.env = env
-        self.costs = []
-        self.visited = set()
-        self.t = 0
+        self.env: Environment = env
+        self.costs: List[float] = []
 
-    def find_best_loc(self) -> None:
+    def find_best_loc(self, max_gen: int = MAX_GENERATION) -> None:
+        parents: List[tuple[int, int]] = [random.choice(self.env.coords),
+                                          random.choice(self.env.coords)]
+
+        tally: List[List[Union[tuple[int, int], float, int]]] = []
+        # content will be [generation, coord, cost, fire freq]
+        curr_best: List[Union[tuple[int, int], float, int]] = []
         curr_gen = 1
-        parents = [
-            random.choice(self.env.coords), random.choice(self.env.coords)
-        ]
-        curr_best = []
-        while curr_gen <= 100:
-            best_parent = self.get_best_indv(parents)
-            new_offspring = self.gen_offspring(parents[0], parents[1])
-            offspring_cost = self.calc_cost(new_offspring)
+        while curr_gen <= max_gen:
+            best_parent: tuple[int, int] = self.get_best_indv(parents)
+            new_offspring: tuple[int, int] = self.gen_offspring(parents[0],
+                                                                parents[1])
+            offspring_cost: float = self.calc_cost(new_offspring)
+
             if offspring_cost > self.calc_cost(best_parent):
                 freq = self.env.city_matrix[new_offspring[1]][new_offspring[0]]
                 curr_best = [new_offspring, offspring_cost, freq]
                 parents[0] = new_offspring
                 while True:
+                    # continuously generate new 2nd parent until its unique
+                    # with new 1st parent (the best offspring so far)
                     new_parent = random.choice(self.env.coords)
                     if not self.is_same_loc(new_offspring, new_parent):
                         parents[1] = new_parent
                         break
             else:
                 parents[1] = random.choice(self.env.coords)
-            self.t += 1
             if len(curr_best) > 0:
-                print(
-                    f"Gen={curr_gen}\tCoord={curr_best[0]}" + \
-                    f"\tCost={round(curr_best[1], 2)}" + \
-                    f"\tFreq={curr_best[2]}" + f"\tTries={self.t}"
-                )
+                tally.append([curr_gen] + curr_best)
                 curr_gen += 1
-                self.costs.append(curr_best[1])
+                self.costs.append(curr_best[1]) # type: ignore
+
+        self.store_tally(tally, "emergency_unit.txt") # type: ignore
         self.show_result()
 
     def get_best_indv(self, coords: list[tuple[int, int]]) -> tuple[int, int]:
@@ -98,7 +104,11 @@ class Locator:
             return (random.randint(0, 9), offspring[1])
         return (offspring[0], random.randint(0, 9))
 
-    def is_same_loc(self, coord1: tuple[int, int], coord2: tuple[int, int]) -> bool:
+    def is_same_loc(
+            self,
+            coord1: tuple[int, int],
+            coord2: tuple[int, int]
+    ) -> bool:
         if coord1[0] == coord2[0] and coord1[1] == coord2[1]:
             return True
         return False
@@ -111,6 +121,15 @@ class Locator:
         plt.ylabel('Cost Value')
         plt.grid(True)
         plt.show()
+
+    def store_tally(
+            self,
+            tally: list[Union[tuple[int, int], float, int]],
+            filename: str = "result.txt"
+    ) -> None:
+        table_headers = ["Generation", "Guess", "Cost Value", "Frequency"]
+        with open(filename, "w") as f:
+            f.write(tabulate(tally, table_headers, "outline")) # type: ignore
 
 
 def main() -> None:
