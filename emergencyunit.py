@@ -96,7 +96,7 @@ class Locator:
             p1: tuple[int, int],
             p2: tuple[int, int]
     ) -> tuple[int, int]:
-        return self.get_best_indv([(p1[0], p2[1]), (p2[0], p1[1])])
+        return self.mutate(self.get_best_indv([(p1[0], p2[1]), (p2[0], p1[1])]))
 
     def mutate(self, offspring: tuple[int, int]) -> tuple[int, int]:
         coord_to_mutate = random.choice([0, 1])
