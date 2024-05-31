@@ -55,7 +55,7 @@ class Locator:
                                                                 parents[1])
             offspring_cost: float = self.calc_cost(new_offspring)
 
-            if offspring_cost > self.calc_cost(best_parent):
+            if offspring_cost < self.calc_cost(best_parent):
                 freq = self.env.city_matrix[new_offspring[1]][new_offspring[0]]
                 curr_best = [new_offspring, offspring_cost, freq]
                 parents[0] = new_offspring
@@ -80,7 +80,7 @@ class Locator:
         costs = []
         for i in range(len(coords)):
             costs.append((self.calc_cost(coords[i]), i))
-        best = sorted(costs, key=lambda c: c[0], reverse=True)[0]
+        best = sorted(costs, key=lambda c: c[0])[0]
         return coords[best[1]]
 
     def calc_cost(self, proposed_loc: tuple[int, int]) -> float:
